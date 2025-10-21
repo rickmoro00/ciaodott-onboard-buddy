@@ -100,7 +100,7 @@ const CallForwarding = ({ data = {}, onChange }: CallForwardingProps) => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">📞 Impostazioni di inoltro chiamata</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Impostazioni di inoltro chiamata</h2>
         <p className="text-muted-foreground">
           Configura quando l'assistente deve inoltrare la chiamata a un operatore umano.
         </p>

@@ -15,7 +15,7 @@ const CenterInfo = ({ data = {}, onChange }: CenterInfoProps) => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">🏢 Informazioni del centro</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Informazioni del centro</h2>
         <p className="text-muted-foreground">
           Inserisci i dati della struttura e del referente operativo principale.
         </p>
@@ -43,18 +43,6 @@ const CenterInfo = ({ data = {}, onChange }: CenterInfoProps) => {
             placeholder="Es. Via Roma 123, 20121 Milano MI"
             value={data.address || ""}
             onChange={(e) => handleChange("address", e.target.value)}
-          />
-        </FormField>
-
-        <FormField
-          label="Partita IVA"
-          description="Partita IVA della struttura"
-          required
-        >
-          <Input
-            placeholder="Es. 12345678901"
-            value={data.vatNumber || ""}
-            onChange={(e) => handleChange("vatNumber", e.target.value)}
           />
         </FormField>
 
@@ -106,18 +94,6 @@ const CenterInfo = ({ data = {}, onChange }: CenterInfoProps) => {
             placeholder="Es. +39 02 12345678"
             value={data.mainPhone || ""}
             onChange={(e) => handleChange("mainPhone", e.target.value)}
-          />
-        </FormField>
-
-        <FormField
-          label="Orari di apertura del centro"
-          description="Specifica gli orari in cui il centro è operativo"
-          required
-        >
-          <Input
-            placeholder="Es. Lun-Ven 8:00-18:00, Sab 9:00-13:00"
-            value={data.openingHours || ""}
-            onChange={(e) => handleChange("openingHours", e.target.value)}
           />
         </FormField>
       </div>

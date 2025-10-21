@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Save, CheckCircle2 } from "lucide-react";
+import { Save, CheckCircle2, AlertCircle } from "lucide-react";
 import CenterInfo from "@/components/onboarding/CenterInfo";
+import logo from "@/assets/ciaodott-logo.png";
 import BookingFlow from "@/components/onboarding/BookingFlow";
 import CallForwarding from "@/components/onboarding/CallForwarding";
 import PhoneIntegration from "@/components/onboarding/PhoneIntegration";
@@ -13,11 +14,11 @@ import Notifications from "@/components/onboarding/Notifications";
 import Summary from "@/components/onboarding/Summary";
 
 const SECTIONS = [
-  { id: 1, title: "Informazioni del centro", icon: "🏢" },
-  { id: 2, title: "Flusso di prenotazione", icon: "🩺" },
-  { id: 3, title: "Inoltro chiamata", icon: "📞" },
-  { id: 4, title: "Integrazione telefonica", icon: "☎️" },
-  { id: 5, title: "Notifiche", icon: "🔔" },
+  { id: 1, title: "Informazioni del centro" },
+  { id: 2, title: "Flusso di prenotazione" },
+  { id: 3, title: "Inoltro chiamata" },
+  { id: 4, title: "Integrazione telefonica" },
+  { id: 5, title: "Notifiche" },
 ];
 
 const Onboarding = () => {
@@ -28,7 +29,78 @@ const Onboarding = () => {
 
   const progress = (currentSection / SECTIONS.length) * 100;
 
+  const validateSection = () => {
+    const section = getSectionKey(currentSection);
+    const data = formData[section] || {};
+
+    if (currentSection === 1) {
+      const required = ["structureName", "address", "contactName", "contactEmail", "contactPhone", "mainPhone"];
+      const missing = required.filter((field) => !data[field]?.trim());
+      if (missing.length > 0) {
+        toast.error("Compila tutti i campi obbligatori", {
+          description: "Alcuni campi richiesti non sono stati compilati",
+          icon: <AlertCircle className="h-4 w-4" />,
+        });
+        return false;
+      }
+    }
+
+    if (currentSection === 2) {
+      if (!data.patientInfo || data.patientInfo.length === 0) {
+        toast.error("Seleziona almeno un'informazione da chiedere al paziente");
+        return false;
+      }
+      if (!data.greetingType) {
+        toast.error("Seleziona un tipo di saluto per l'assistente");
+        return false;
+      }
+      if (data.greetingType === "custom" && !data.customGreeting?.trim()) {
+        toast.error("Inserisci un saluto personalizzato");
+        return false;
+      }
+      if (!data.dontHandle?.trim()) {
+        toast.error("Specifica le situazioni da NON gestire mai");
+        return false;
+      }
+    }
+
+    if (currentSection === 3) {
+      // Call forwarding validation (no required fields)
+    }
+
+    if (currentSection === 4) {
+      const required = ["pbxType", "mainCallNumber", "forwardingNumber", "techContactName", "techContactEmail", "techContactPhone"];
+      const missing = required.filter((field) => !data[field]?.trim());
+      if (missing.length > 0) {
+        toast.error("Compila tutti i campi obbligatori della sezione telefonia");
+        return false;
+      }
+      if (data.mainCallNumber === data.forwardingNumber) {
+        toast.error("Il numero alternativo non può essere uguale al numero principale");
+        return false;
+      }
+    }
+
+    if (currentSection === 5) {
+      if (!data.notificationEmails?.trim()) {
+        toast.error("Inserisci almeno un indirizzo email per le notifiche");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const getSectionKey = (sectionId: number) => {
+    const keys = ["centerInfo", "bookingFlow", "callForwarding", "phoneIntegration", "notifications"];
+    return keys[sectionId - 1];
+  };
+
   const handleNext = () => {
+    if (!validateSection()) {
+      return;
+    }
+
     // Auto-save simulation
     setLastSaved(new Date());
     toast.success("Progresso salvato automaticamente", {
@@ -71,9 +143,11 @@ const Onboarding = () => {
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-primary">CiaoDott.</h1>
-              <p className="text-sm text-muted-foreground">Onboarding Centro Medico</p>
+            <div className="flex items-center gap-4">
+              <img src={logo} alt="CiaoDott" className="h-8" />
+              <div className="border-l border-border pl-4">
+                <p className="text-sm text-muted-foreground">Onboarding Centro Medico</p>
+              </div>
             </div>
             {lastSaved && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -110,7 +184,6 @@ const Onboarding = () => {
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                <span>{section.icon}</span>
                 <span>{section.title}</span>
                 {currentSection > section.id && <CheckCircle2 className="h-4 w-4" />}
               </button>
@@ -124,17 +197,14 @@ const Onboarding = () => {
         {/* Intro text (only on first section) */}
         {currentSection === 1 && (
           <Card className="mb-6 p-6 bg-secondary border-secondary-foreground/20">
-            <div className="flex gap-3">
-              <div className="text-2xl">⏱️</div>
-              <div>
-                <h3 className="font-semibold text-secondary-foreground mb-1">
-                  Tempo di compilazione: 5–7 minuti
-                </h3>
-                <p className="text-sm text-secondary-foreground/80">
-                  Queste informazioni sono fondamentali per configurare correttamente
-                  l'assistente virtuale e attivare il servizio senza ritardi.
-                </p>
-              </div>
+            <div>
+              <h3 className="font-semibold text-secondary-foreground mb-1">
+                Tempo di compilazione: 5–7 minuti
+              </h3>
+              <p className="text-sm text-secondary-foreground/80">
+                Queste informazioni sono fondamentali per configurare correttamente
+                l'assistente virtuale e attivare il servizio senza ritardi.
+              </p>
             </div>
           </Card>
         )}
@@ -185,16 +255,15 @@ const Onboarding = () => {
         <div className="flex gap-4 mt-6">
           {currentSection > 1 && (
             <Button variant="outline" onClick={handleBack} className="flex-1">
-              ← Indietro
+              Indietro
             </Button>
           )}
           {currentSection < SECTIONS.length ? (
-            <Button onClick={handleNext} className="flex-1">
-              Continua →
-            </Button>
+          <Button onClick={handleNext} className="flex-1">
+            Continua
+          </Button>
           ) : (
             <Button onClick={handleSubmit} className="flex-1" disabled={!finalConfirmation}>
-              <CheckCircle2 className="h-4 w-4 mr-2" />
               Invia dati e avvia configurazione
             </Button>
           )}

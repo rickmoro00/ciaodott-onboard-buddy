@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import FormField from "./FormField";
-import { Upload } from "lucide-react";
+import FileUpload from "./FileUpload";
 
 interface BookingFlowProps {
   data?: any;
@@ -28,7 +28,7 @@ const BookingFlow = ({ data = {}, onChange }: BookingFlowProps) => {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          🩺 Flusso di prenotazione e configurazione assistente
+          Flusso di prenotazione e configurazione assistente
         </h2>
         <p className="text-muted-foreground">
           Configura le informazioni da raccogliere e le comunicazioni da inviare ai pazienti.
@@ -175,26 +175,22 @@ const BookingFlow = ({ data = {}, onChange }: BookingFlowProps) => {
           label="Upload lista prestazioni del centro"
           description="Carica un file con l'elenco completo delle prestazioni offerte (PDF, Excel o Word). In alternativa puoi inviarlo via email a riccardo@ciaodott.com"
         >
-          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer">
-            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-1">
-              Clicca per caricare o trascina il file qui
-            </p>
-            <p className="text-xs text-muted-foreground">PDF, Excel, Word (max 10MB)</p>
-          </div>
+          <FileUpload
+            value={data.servicesList}
+            onChange={(file) => handleChange("servicesList", file)}
+            accept=".pdf,.doc,.docx,.xls,.xlsx"
+          />
         </FormField>
 
         <FormField
           label="Upload linee guida per la segreteria"
           description="Documenti con procedure e protocolli da seguire (PDF o Word)"
         >
-          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer">
-            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-1">
-              Clicca per caricare o trascina il file qui
-            </p>
-            <p className="text-xs text-muted-foreground">PDF, Word (max 10MB)</p>
-          </div>
+          <FileUpload
+            value={data.guidelines}
+            onChange={(file) => handleChange("guidelines", file)}
+            accept=".pdf,.doc,.docx"
+          />
         </FormField>
       </div>
 

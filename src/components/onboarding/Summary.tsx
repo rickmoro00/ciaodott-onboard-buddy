@@ -7,13 +7,12 @@ interface SummaryProps {
 const Summary = ({ formData }: SummaryProps) => {
   const { centerInfo, bookingFlow, callForwarding, phoneIntegration, notifications } = formData;
 
-  const SummarySection = ({ title, icon, children }: any) => (
+  const SummarySection = ({ title, children }: any) => (
     <div className="mb-6">
-      <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-        <span>{icon}</span>
+      <h3 className="text-lg font-semibold text-foreground mb-3">
         {title}
       </h3>
-      <div className="space-y-2 pl-8">{children}</div>
+      <div className="space-y-2 pl-4">{children}</div>
     </div>
   );
 
@@ -31,27 +30,25 @@ const Summary = ({ formData }: SummaryProps) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-foreground mb-2">📋 Riepilogo configurazione</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-2">Riepilogo configurazione</h2>
       <p className="text-muted-foreground mb-6">
         Verifica che tutte le informazioni siano corrette prima di procedere.
       </p>
 
       <div className="bg-muted/30 rounded-lg p-6">
         {centerInfo && (
-          <SummarySection title="Informazioni del centro" icon="🏢">
+          <SummarySection title="Informazioni del centro">
             <SummaryItem label="Struttura" value={centerInfo.structureName} />
             <SummaryItem label="Indirizzo" value={centerInfo.address} />
-            <SummaryItem label="Partita IVA" value={centerInfo.vatNumber} />
             <SummaryItem label="Referente" value={centerInfo.contactName} />
             <SummaryItem label="Email" value={centerInfo.contactEmail} />
             <SummaryItem label="Telefono" value={centerInfo.contactPhone} />
             <SummaryItem label="Numero principale" value={centerInfo.mainPhone} />
-            <SummaryItem label="Orari" value={centerInfo.openingHours} />
           </SummarySection>
         )}
 
         {bookingFlow && (
-          <SummarySection title="Flusso di prenotazione" icon="🩺">
+          <SummarySection title="Flusso di prenotazione">
             <SummaryItem label="Informazioni paziente da raccogliere" value={bookingFlow.patientInfo} />
             <SummaryItem label="Comunicazioni" value={bookingFlow.communications} />
             <SummaryItem
@@ -70,7 +67,7 @@ const Summary = ({ formData }: SummaryProps) => {
         )}
 
         {callForwarding && (
-          <SummarySection title="Inoltro chiamata" icon="📞">
+          <SummarySection title="Inoltro chiamata">
             <div className="text-sm text-muted-foreground">
               {callForwarding.rules &&
                 Object.entries(callForwarding.rules)
@@ -85,7 +82,7 @@ const Summary = ({ formData }: SummaryProps) => {
         )}
 
         {phoneIntegration && (
-          <SummarySection title="Integrazione telefonica" icon="☎️">
+          <SummarySection title="Integrazione telefonica">
             <SummaryItem label="Tipo centralino" value={phoneIntegration.pbxType} />
             <SummaryItem label="Numero principale" value={phoneIntegration.mainCallNumber} />
             <SummaryItem label="Numero inoltro" value={phoneIntegration.forwardingNumber} />
@@ -96,7 +93,7 @@ const Summary = ({ formData }: SummaryProps) => {
         )}
 
         {notifications && (
-          <SummarySection title="Notifiche" icon="🔔">
+          <SummarySection title="Notifiche">
             <SummaryItem label="Notifiche clinica" value={notifications.clinicNotifications} />
             <SummaryItem label="Email notifiche" value={notifications.notificationEmails} />
             <SummaryItem

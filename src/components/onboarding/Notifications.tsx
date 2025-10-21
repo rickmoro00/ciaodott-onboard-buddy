@@ -26,7 +26,7 @@ const NotificationsProps = ({ data = {}, onChange }: NotificationsProps) => {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">🔔 Notifiche e comunicazioni</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Notifiche e comunicazioni</h2>
         <p className="text-muted-foreground">
           Configura quando e come ricevere notifiche e gestisci le comunicazioni ai pazienti.
         </p>
@@ -102,13 +102,18 @@ const NotificationsProps = ({ data = {}, onChange }: NotificationsProps) => {
                     </div>
                   </Label>
                   {data.patientNotificationType === "yes" && (
-                    <Textarea
-                      placeholder="Personalizza il messaggio di conferma. Es: Gentile [Nome], confermiamo il suo appuntamento per [Prestazione] il [Data] alle [Ora]. A presto!"
-                      rows={4}
-                      className="mt-2"
-                      value={data.whatsappMessage || ""}
-                      onChange={(e) => handleChange("whatsappMessage", e.target.value)}
-                    />
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Personalizza il messaggio di conferma"
+                        rows={6}
+                        className="mt-2"
+                        value={data.whatsappMessage || "Il suo appuntamento per l'ecografia dell'addome completo presso Centro Polidiagnostico è confermato per il 24/10/2025 alle ore 15:15. La invitiamo a seguire le eventuali raccomandazioni fornite durante la chiamata.\n\nQuesto è un messaggio automatico: si prega di non rispondere. Per modifiche o ulteriori informazioni, si prega di ricontattare la clinica."}
+                        onChange={(e) => handleChange("whatsappMessage", e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Nota:</strong> L'invio del messaggio WhatsApp ha un costo di €0.10 per ogni messaggio inviato.
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>

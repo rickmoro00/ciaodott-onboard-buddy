@@ -20,7 +20,7 @@ const PhoneIntegration = ({ data = {}, onChange }: PhoneIntegrationProps) => {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-2">
-          ☎️ Dettagli centralino e integrazione telefonica
+          Dettagli centralino e integrazione telefonica
         </h2>
         <p className="text-muted-foreground">
           Informazioni necessarie per integrare l'assistente con il centralino della struttura.
