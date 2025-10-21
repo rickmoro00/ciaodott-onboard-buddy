@@ -24,6 +24,22 @@ const BookingFlow = ({ data = {}, onChange }: BookingFlowProps) => {
     onChange({ ...data, [field]: value });
   };
 
+  const patientInfoOptions = [
+    { value: "Nome e cognome", label: "Nome e cognome" },
+    { value: "Codice fiscale", label: "Codice fiscale" },
+    {
+      value: "Numero di telefono",
+      label: "Numero di telefono",
+      description:
+        "Il numero del chiamante viene raccolto automaticamente. Richiedilo solo se il paziente è diverso dal chiamante.",
+    },
+    { value: "Data di nascita", label: "Data di nascita" },
+    { value: "Sesso", label: "Sesso" },
+    { value: "Comune di nascita", label: "Comune di nascita" },
+    { value: "Quesito diagnostico", label: "Quesito diagnostico" },
+    { value: "Preferenza per il medico", label: "Preferenza per il medico" },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
@@ -42,29 +58,25 @@ const BookingFlow = ({ data = {}, onChange }: BookingFlowProps) => {
         required
       >
         <div className="space-y-3 mt-3">
-          {[
-            "Nome e cognome",
-            "Codice fiscale",
-            "Numero di telefono",
-            "Data di nascita",
-            "Sesso",
-            "Comune di nascita",
-            "Quesito diagnostico",
-            "Preferenza per il medico",
-          ].map((item) => (
-            <div key={item} className="flex items-center space-x-3">
+          {patientInfoOptions.map((option) => (
+            <div key={option.value} className="flex items-start space-x-3">
               <Checkbox
-                id={`patient-info-${item}`}
-                checked={(data.patientInfo || []).includes(item)}
+                id={`patient-info-${option.value}`}
+                checked={(data.patientInfo || []).includes(option.value)}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange("patientInfo", item, checked as boolean)
+                  handleCheckboxChange("patientInfo", option.value, checked as boolean)
                 }
               />
               <label
-                htmlFor={`patient-info-${item}`}
+                htmlFor={`patient-info-${option.value}`}
                 className="text-sm cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                {item}
+                <span>{option.label}</span>
+                {option.description && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {option.description}
+                  </p>
+                )}
               </label>
             </div>
           ))}

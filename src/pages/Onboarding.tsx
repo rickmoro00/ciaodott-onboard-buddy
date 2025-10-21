@@ -26,6 +26,7 @@ const Onboarding = () => {
   const [formData, setFormData] = useState<any>({});
   const [finalConfirmation, setFinalConfirmation] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [maxCompletedSection, setMaxCompletedSection] = useState(1);
 
   const progress = (currentSection / SECTIONS.length) * 100;
 
@@ -101,16 +102,46 @@ const Onboarding = () => {
       return;
     }
 
-    // Auto-save simulation
+    const nextSection = Math.min(SECTIONS.length, currentSection + 1);
+
     setLastSaved(new Date());
     toast.success("Progresso salvato automaticamente", {
       icon: <Save className="h-4 w-4" />,
     });
 
-    if (currentSection < SECTIONS.length) {
-      setCurrentSection(currentSection + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    setCurrentSection(nextSection);
+    setMaxCompletedSection((prev) => Math.max(prev, nextSection));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSectionClick = (sectionId: number) => {
+    if (sectionId === currentSection) {
+      return;
     }
+
+    if (sectionId > currentSection) {
+      if (sectionId > maxCompletedSection + 1) {
+        toast.error("Completa le sezioni precedenti prima di procedere");
+        return;
+      }
+
+      if (!validateSection()) {
+        return;
+      }
+
+      setLastSaved(new Date());
+      toast.success("Progresso salvato automaticamente", {
+        icon: <Save className="h-4 w-4" />,
+      });
+
+      setCurrentSection(sectionId);
+      setMaxCompletedSection((prev) => Math.max(prev, sectionId));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    setCurrentSection(sectionId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleBack = () => {
@@ -175,7 +206,7 @@ const Onboarding = () => {
             {SECTIONS.map((section) => (
               <button
                 key={section.id}
-                onClick={() => setCurrentSection(section.id)}
+                onClick={() => handleSectionClick(section.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   currentSection === section.id
                     ? "bg-primary text-primary-foreground"
