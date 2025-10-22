@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Save, CheckCircle2, AlertCircle } from "lucide-react";
 import CenterInfo from "@/components/onboarding/CenterInfo";
@@ -28,6 +29,9 @@ const Onboarding = () => {
   const [finalConfirmation, setFinalConfirmation] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [maxCompletedSection, setMaxCompletedSection] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const progress = (currentSection / SECTIONS.length) * 100;
 
@@ -98,6 +102,29 @@ const Onboarding = () => {
     return keys[sectionId - 1];
   };
 
+  const uploadDocument = async (file: File, prefix: string) => {
+    const extension = file.name.includes(".") ? `.${file.name.split(".").pop()}` : "";
+    const baseName = file.name.replace(extension, "");
+    const sanitizedBase = baseName.replace(/[^a-zA-Z0-9-_]/g, "_") || "document";
+    const uniqueSuffix =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2, 10);
+    const filePath = `submissions/${prefix}/${Date.now()}-${uniqueSuffix}-${sanitizedBase}${extension}`;
+
+    const { error } = await supabase.storage.from("onboarding-documents").upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type || "application/octet-stream",
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return filePath;
+  };
+
   const handleNext = () => {
     if (!validateSection()) {
       return;
@@ -153,41 +180,27 @@ const Onboarding = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     if (!finalConfirmation) {
       toast.error("Conferma le informazioni prima di procedere");
       return;
     }
 
     try {
+      setSubmissionError(null);
+      setIsSubmitting(true);
       // Upload files to storage if they exist
-      let servicesListUrl = null;
-      let guidelinesUrl = null;
-
-      if (formData.bookingFlow?.servicesList) {
-        const file = formData.bookingFlow.servicesList;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-services.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('onboarding-documents')
-          .upload(fileName, file);
-        
-        if (!uploadError) {
-          servicesListUrl = fileName;
-        }
-      }
-
-      if (formData.bookingFlow?.guidelines) {
-        const file = formData.bookingFlow.guidelines;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-guidelines.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('onboarding-documents')
-          .upload(fileName, file);
-        
-        if (!uploadError) {
-          guidelinesUrl = fileName;
-        }
-      }
+      const [servicesListUrl, guidelinesUrl] = await Promise.all([
+        formData.bookingFlow?.servicesList instanceof File
+          ? uploadDocument(formData.bookingFlow.servicesList, "services-list")
+          : Promise.resolve<string | null>(null),
+        formData.bookingFlow?.guidelines instanceof File
+          ? uploadDocument(formData.bookingFlow.guidelines, "guidelines")
+          : Promise.resolve<string | null>(null),
+      ]);
 
       // Prepare data for submission
       const submissionData = {
@@ -218,10 +231,13 @@ const Onboarding = () => {
         tech_contact_phone: formData.phoneIntegration?.techContactPhone || '',
         external_provider: formData.phoneIntegration?.externalProvider || null,
         
-        notification_types: formData.notifications?.notificationTypes || [],
+        notification_types: formData.notifications?.clinicNotifications || [],
         notification_emails: formData.notifications?.notificationEmails || '',
-        patient_notification: formData.notifications?.patientNotification || '',
-        whatsapp_message: formData.notifications?.whatsappMessage || null,
+        patient_notification: formData.notifications?.patientNotificationType || 'no',
+        whatsapp_message:
+          formData.notifications?.patientNotificationType === 'yes'
+            ? formData.notifications?.whatsappMessage?.trim() || null
+            : null,
       };
 
       const { error } = await supabase
@@ -230,16 +246,15 @@ const Onboarding = () => {
 
       if (error) throw error;
 
-      toast.success("Configurazione inviata con successo!", {
-        description: "Il team CiaoDott procederà con l'attivazione del servizio.",
-        icon: <CheckCircle2 className="h-5 w-5 text-success" />,
-      });
+      setIsSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast.error("Errore durante l'invio", {
-        description: "Si prega di riprovare o contattare il supporto.",
-        icon: <AlertCircle className="h-4 w-4" />,
-      });
+      setSubmissionError(
+        "Non è stato possibile inviare i dati o caricare i documenti. Riprova oppure contatta info@ciaodott.com."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -260,7 +275,7 @@ const Onboarding = () => {
                 <p className="text-sm text-muted-foreground">Onboarding Centro Medico</p>
               </div>
             </div>
-            {lastSaved && (
+            {lastSaved && !isSubmitted && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Save className="h-4 w-4" />
                 <span>Salvato {lastSaved.toLocaleTimeString()}</span>
@@ -270,116 +285,140 @@ const Onboarding = () => {
         </div>
       </header>
 
-      {/* Progress Bar */}
-      <div className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-6">
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-foreground">
-                Sezione {currentSection} di {SECTIONS.length}
-              </span>
-              <span className="text-sm font-medium text-primary">{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {SECTIONS.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => handleSectionClick(section.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  currentSection === section.id
-                    ? "bg-primary text-primary-foreground"
-                    : currentSection > section.id
-                    ? "bg-secondary text-secondary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                <span>{section.title}</span>
-                {currentSection > section.id && <CheckCircle2 className="h-4 w-4" />}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Intro text (only on first section) */}
-        {currentSection === 1 && (
-          <Card className="mb-6 p-6 bg-secondary border-secondary-foreground/20">
-            <div>
-              <h3 className="font-semibold text-secondary-foreground mb-1">
-                Tempo di compilazione: 5–7 minuti
-              </h3>
-              <p className="text-sm text-secondary-foreground/80">
-                Queste informazioni sono fondamentali per configurare correttamente
-                l'assistente virtuale e attivare il servizio senza ritardi.
-              </p>
-            </div>
-          </Card>
-        )}
-
-        {/* Form Sections */}
-        <Card className="p-6 md:p-8">
-          {currentSection === 1 && (
-            <CenterInfo data={formData.centerInfo} onChange={(data) => updateFormData("centerInfo", data)} />
-          )}
-          {currentSection === 2 && (
-            <BookingFlow data={formData.bookingFlow} onChange={(data) => updateFormData("bookingFlow", data)} />
-          )}
-          {currentSection === 3 && (
-            <CallForwarding data={formData.callForwarding} onChange={(data) => updateFormData("callForwarding", data)} />
-          )}
-          {currentSection === 4 && (
-            <PhoneIntegration data={formData.phoneIntegration} onChange={(data) => updateFormData("phoneIntegration", data)} />
-          )}
-          {currentSection === 5 && (
-            <Notifications data={formData.notifications} onChange={(data) => updateFormData("notifications", data)} />
-          )}
-        </Card>
-
-        {/* Summary Section */}
-        {currentSection === SECTIONS.length && (
-          <Card className="mt-6 p-6 md:p-8">
-            <Summary formData={formData} />
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="final-confirmation"
-                  checked={finalConfirmation}
-                  onCheckedChange={(checked) => setFinalConfirmation(checked as boolean)}
-                />
-                <label
-                  htmlFor="final-confirmation"
-                  className="text-sm leading-relaxed cursor-pointer"
-                >
-                  Confermo che le informazioni inserite sono corrette e autorizzo CiaoDott ad
-                  avviare la configurazione dell'assistente virtuale.
-                </label>
+      {isSubmitted ? (
+        <main className="container mx-auto px-4 py-16 max-w-2xl">
+          <section id="onboardingSuccess" className="text-center" aria-live="polite">
+            <h1 className="text-3xl font-semibold mb-4">Raccolta informazioni conclusa</h1>
+            <p className="text-lg text-muted-foreground">
+              Grazie. Abbiamo ricevuto i dati del suo onboarding. Un referente di CiaoDott si metterà in
+              contatto con lei per eventuali domande o chiarimenti.
+            </p>
+          </section>
+        </main>
+      ) : (
+        <>
+          {/* Progress Bar */}
+          <div className="bg-card border-b border-border">
+            <div className="container mx-auto px-4 py-6">
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-foreground">
+                    Sezione {currentSection} di {SECTIONS.length}
+                  </span>
+                  <span className="text-sm font-medium text-primary">{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {SECTIONS.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => handleSectionClick(section.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                      currentSection === section.id
+                        ? "bg-primary text-primary-foreground"
+                        : currentSection > section.id
+                        ? "bg-secondary text-secondary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <span>{section.title}</span>
+                    {currentSection > section.id && <CheckCircle2 className="h-4 w-4" />}
+                  </button>
+                ))}
               </div>
             </div>
-          </Card>
-        )}
+          </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex gap-4 mt-6">
-          {currentSection > 1 && (
-            <Button variant="outline" onClick={handleBack} className="flex-1">
-              Indietro
-            </Button>
-          )}
-          {currentSection < SECTIONS.length ? (
-          <Button onClick={handleNext} className="flex-1">
-            Continua
-          </Button>
-          ) : (
-            <Button onClick={handleSubmit} className="flex-1" disabled={!finalConfirmation}>
-              Invia dati e avvia configurazione
-            </Button>
-          )}
-        </div>
-      </main>
+          {/* Main Content */}
+          <main className="container mx-auto px-4 py-8 max-w-4xl">
+            {submissionError && (
+              <Alert className="mb-6 border-border bg-muted/40 text-left">
+                <AlertDescription>{submissionError}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Intro text (only on first section) */}
+            {currentSection === 1 && (
+              <Card className="mb-6 p-6 bg-secondary border-secondary-foreground/20">
+                <div>
+                  <h3 className="font-semibold text-secondary-foreground mb-1">
+                    Tempo di compilazione: 5–7 minuti
+                  </h3>
+                  <p className="text-sm text-secondary-foreground/80">
+                    Queste informazioni sono fondamentali per configurare correttamente
+                    l'assistente virtuale e attivare il servizio senza ritardi.
+                  </p>
+                </div>
+              </Card>
+            )}
+
+            {/* Form Sections */}
+            <Card className="p-6 md:p-8">
+              {currentSection === 1 && (
+                <CenterInfo data={formData.centerInfo} onChange={(data) => updateFormData("centerInfo", data)} />
+              )}
+              {currentSection === 2 && (
+                <BookingFlow data={formData.bookingFlow} onChange={(data) => updateFormData("bookingFlow", data)} />
+              )}
+              {currentSection === 3 && (
+                <CallForwarding data={formData.callForwarding} onChange={(data) => updateFormData("callForwarding", data)} />
+              )}
+              {currentSection === 4 && (
+                <PhoneIntegration data={formData.phoneIntegration} onChange={(data) => updateFormData("phoneIntegration", data)} />
+              )}
+              {currentSection === 5 && (
+                <Notifications data={formData.notifications} onChange={(data) => updateFormData("notifications", data)} />
+              )}
+            </Card>
+
+            {/* Summary Section */}
+            {currentSection === SECTIONS.length && (
+              <Card className="mt-6 p-6 md:p-8">
+                <Summary formData={formData} />
+                <div className="mt-6 p-4 bg-muted rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="final-confirmation"
+                      checked={finalConfirmation}
+                      onCheckedChange={(checked) => setFinalConfirmation(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="final-confirmation"
+                      className="text-sm leading-relaxed cursor-pointer"
+                    >
+                      Confermo che le informazioni inserite sono corrette e autorizzo CiaoDott ad
+                      avviare la configurazione dell'assistente virtuale.
+                    </label>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex gap-4 mt-6">
+              {currentSection > 1 && (
+                <Button variant="outline" onClick={handleBack} className="flex-1">
+                  Indietro
+                </Button>
+              )}
+              {currentSection < SECTIONS.length ? (
+                <Button onClick={handleNext} className="flex-1">
+                  Continua
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmit}
+                  className="flex-1"
+                  disabled={!finalConfirmation || isSubmitting}
+                >
+                  {isSubmitting ? "Invio in corso…" : "Invia dati e avvia configurazione"}
+                </Button>
+              )}
+            </div>
+          </main>
+        </>
+      )}
     </div>
   );
 };

@@ -116,8 +116,8 @@ const BookingFlow = ({ data = {}, onChange }: BookingFlowProps) => {
         <Textarea
           placeholder="Es. Si prega di presentarsi 15 minuti prima dell'appuntamento..."
           rows={4}
-          value={data.additionalInstructions || ""}
-          onChange={(e) => handleChange("additionalInstructions", e.target.value)}
+          value={data.otherInstructions || ""}
+          onChange={(e) => handleChange("otherInstructions", e.target.value)}
         />
       </FormField>
 
@@ -171,8 +171,10 @@ const BookingFlow = ({ data = {}, onChange }: BookingFlowProps) => {
           <div className="flex items-center space-x-3">
             <Checkbox
               id="ask-rating"
-              checked={data.askRating || false}
-              onCheckedChange={(checked) => handleChange("askRating", checked)}
+              checked={(data.additionalOptions || []).includes("ask-rating")}
+              onCheckedChange={(checked) =>
+                handleCheckboxChange("additionalOptions", "ask-rating", checked as boolean)
+              }
             />
             <label htmlFor="ask-rating" className="text-sm cursor-pointer leading-none">
               Chiedere voto alla conversazione

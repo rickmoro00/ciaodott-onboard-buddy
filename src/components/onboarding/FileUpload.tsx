@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Upload, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,8 @@ interface FileUploadProps {
 
 const FileUpload = ({ value, onChange, accept = ".pdf,.doc,.docx,.xls,.xlsx", maxSize = 10 }: FileUploadProps) => {
   const [dragActive, setDragActive] = useState(false);
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -27,15 +29,17 @@ const FileUpload = ({ value, onChange, accept = ".pdf,.doc,.docx,.xls,.xlsx", ma
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFile(file);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFile(file);
     }
   };
 
@@ -49,6 +53,13 @@ const FileUpload = ({ value, onChange, accept = ".pdf,.doc,.docx,.xls,.xlsx", ma
 
   const handleRemove = () => {
     onChange(undefined);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  };
+
+  const handleClick = () => {
+    inputRef.current?.click();
   };
 
   if (value) {
@@ -63,15 +74,33 @@ const FileUpload = ({ value, onChange, accept = ".pdf,.doc,.docx,.xls,.xlsx", ma
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={handleRemove}
-          className="text-destructive hover:text-destructive"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleClick}
+          >
+            Cambia file
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleRemove}
+            className="text-destructive hover:text-destructive"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="file"
+          className="hidden"
+          accept={accept}
+          onChange={handleChange}
+        />
       </div>
     );
   }
@@ -85,11 +114,21 @@ const FileUpload = ({ value, onChange, accept = ".pdf,.doc,.docx,.xls,.xlsx", ma
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
-      onClick={() => document.getElementById("file-upload")?.click()}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleClick();
+        }
+      }}
+      aria-describedby={`${inputId}-helper`}
     >
       <input
+        ref={inputRef}
+        id={inputId}
         type="file"
-        id="file-upload"
         className="hidden"
         accept={accept}
         onChange={handleChange}
@@ -98,7 +137,7 @@ const FileUpload = ({ value, onChange, accept = ".pdf,.doc,.docx,.xls,.xlsx", ma
       <p className="text-sm text-muted-foreground mb-1">
         Clicca per caricare o trascina il file qui
       </p>
-      <p className="text-xs text-muted-foreground">
+      <p id={`${inputId}-helper`} className="text-xs text-muted-foreground">
         {accept.split(",").join(", ").toUpperCase()} (max {maxSize}MB)
       </p>
     </div>

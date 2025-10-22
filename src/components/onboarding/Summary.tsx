@@ -59,9 +59,15 @@ const Summary = ({ formData }: SummaryProps) => {
                   : "Saluto consigliato"
               }
             />
+            <SummaryItem label="Istruzioni aggiuntive" value={bookingFlow.otherInstructions} />
             <SummaryItem
-              label="Richiesta voto conversazione"
-              value={bookingFlow.askRating ? "Sì" : "No"}
+              label="Funzionalità aggiuntive"
+              value={(bookingFlow.additionalOptions || []).map((option: string) => {
+                if (option === "ask-rating") {
+                  return "Chiedere voto alla conversazione";
+                }
+                return option;
+              })}
             />
           </SummarySection>
         )}
