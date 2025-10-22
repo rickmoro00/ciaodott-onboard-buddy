@@ -231,10 +231,13 @@ const Onboarding = () => {
         tech_contact_phone: formData.phoneIntegration?.techContactPhone || '',
         external_provider: formData.phoneIntegration?.externalProvider || null,
         
-        notification_types: formData.notifications?.notificationTypes || [],
+        notification_types: formData.notifications?.clinicNotifications || [],
         notification_emails: formData.notifications?.notificationEmails || '',
-        patient_notification: formData.notifications?.patientNotification || '',
-        whatsapp_message: formData.notifications?.whatsappMessage || null,
+        patient_notification: formData.notifications?.patientNotificationType || 'no',
+        whatsapp_message:
+          formData.notifications?.patientNotificationType === 'yes'
+            ? formData.notifications?.whatsappMessage?.trim() || null
+            : null,
       };
 
       const { error } = await supabase
