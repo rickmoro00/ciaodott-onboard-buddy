@@ -102,6 +102,29 @@ const Onboarding = () => {
     return keys[sectionId - 1];
   };
 
+  const uploadDocument = async (file: File, prefix: string) => {
+    const extension = file.name.includes(".") ? `.${file.name.split(".").pop()}` : "";
+    const baseName = file.name.replace(extension, "");
+    const sanitizedBase = baseName.replace(/[^a-zA-Z0-9-_]/g, "_") || "document";
+    const uniqueSuffix =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2, 10);
+    const filePath = `submissions/${prefix}/${Date.now()}-${uniqueSuffix}-${sanitizedBase}${extension}`;
+
+    const { error } = await supabase.storage.from("onboarding-documents").upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type || "application/octet-stream",
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return filePath;
+  };
+
   const handleNext = () => {
     if (!validateSection()) {
       return;
@@ -170,34 +193,14 @@ const Onboarding = () => {
       setSubmissionError(null);
       setIsSubmitting(true);
       // Upload files to storage if they exist
-      let servicesListUrl = null;
-      let guidelinesUrl = null;
-
-      if (formData.bookingFlow?.servicesList) {
-        const file = formData.bookingFlow.servicesList;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-services.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('onboarding-documents')
-          .upload(fileName, file);
-        
-        if (!uploadError) {
-          servicesListUrl = fileName;
-        }
-      }
-
-      if (formData.bookingFlow?.guidelines) {
-        const file = formData.bookingFlow.guidelines;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-guidelines.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('onboarding-documents')
-          .upload(fileName, file);
-        
-        if (!uploadError) {
-          guidelinesUrl = fileName;
-        }
-      }
+      const [servicesListUrl, guidelinesUrl] = await Promise.all([
+        formData.bookingFlow?.servicesList instanceof File
+          ? uploadDocument(formData.bookingFlow.servicesList, "services-list")
+          : Promise.resolve<string | null>(null),
+        formData.bookingFlow?.guidelines instanceof File
+          ? uploadDocument(formData.bookingFlow.guidelines, "guidelines")
+          : Promise.resolve<string | null>(null),
+      ]);
 
       // Prepare data for submission
       const submissionData = {
@@ -244,7 +247,9 @@ const Onboarding = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       console.error('Error submitting form:', error);
-      setSubmissionError("Non è stato possibile inviare i dati. Riprova oppure contatta info@ciaodott.com.");
+      setSubmissionError(
+        "Non è stato possibile inviare i dati o caricare i documenti. Riprova oppure contatta info@ciaodott.com."
+      );
     } finally {
       setIsSubmitting(false);
     }
