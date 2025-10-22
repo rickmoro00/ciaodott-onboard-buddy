@@ -14,7 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      onboarding_submissions: {
+        Row: {
+          additional_options: Json | null
+          address: string
+          call_forwarding_settings: Json | null
+          communications: Json | null
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at: string
+          custom_greeting: string | null
+          dont_handle: string
+          external_provider: string | null
+          forwarding_number: string
+          greeting_type: string
+          guidelines_file: string | null
+          id: string
+          main_call_number: string
+          main_phone: string
+          notification_emails: string
+          notification_types: Json | null
+          other_instructions: string | null
+          patient_info: Json
+          patient_notification: string
+          pbx_type: string
+          services_list_file: string | null
+          structure_name: string
+          tech_contact_email: string
+          tech_contact_name: string
+          tech_contact_phone: string
+          updated_at: string
+          whatsapp_message: string | null
+        }
+        Insert: {
+          additional_options?: Json | null
+          address: string
+          call_forwarding_settings?: Json | null
+          communications?: Json | null
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at?: string
+          custom_greeting?: string | null
+          dont_handle: string
+          external_provider?: string | null
+          forwarding_number: string
+          greeting_type: string
+          guidelines_file?: string | null
+          id?: string
+          main_call_number: string
+          main_phone: string
+          notification_emails: string
+          notification_types?: Json | null
+          other_instructions?: string | null
+          patient_info?: Json
+          patient_notification: string
+          pbx_type: string
+          services_list_file?: string | null
+          structure_name: string
+          tech_contact_email: string
+          tech_contact_name: string
+          tech_contact_phone: string
+          updated_at?: string
+          whatsapp_message?: string | null
+        }
+        Update: {
+          additional_options?: Json | null
+          address?: string
+          call_forwarding_settings?: Json | null
+          communications?: Json | null
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string
+          custom_greeting?: string | null
+          dont_handle?: string
+          external_provider?: string | null
+          forwarding_number?: string
+          greeting_type?: string
+          guidelines_file?: string | null
+          id?: string
+          main_call_number?: string
+          main_phone?: string
+          notification_emails?: string
+          notification_types?: Json | null
+          other_instructions?: string | null
+          patient_info?: Json
+          patient_notification?: string
+          pbx_type?: string
+          services_list_file?: string | null
+          structure_name?: string
+          tech_contact_email?: string
+          tech_contact_name?: string
+          tech_contact_phone?: string
+          updated_at?: string
+          whatsapp_message?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

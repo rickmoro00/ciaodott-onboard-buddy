@@ -12,6 +12,7 @@ import CallForwarding from "@/components/onboarding/CallForwarding";
 import PhoneIntegration from "@/components/onboarding/PhoneIntegration";
 import Notifications from "@/components/onboarding/Notifications";
 import Summary from "@/components/onboarding/Summary";
+import { supabase } from "@/integrations/supabase/client";
 
 const SECTIONS = [
   { id: 1, title: "Informazioni del centro" },
@@ -151,16 +152,95 @@ const Onboarding = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!finalConfirmation) {
       toast.error("Conferma le informazioni prima di procedere");
       return;
     }
-    toast.success("Configurazione inviata con successo!", {
-      description: "Il team CiaoDott procederà con l'attivazione del servizio.",
-      icon: <CheckCircle2 className="h-5 w-5 text-success" />,
-    });
-    console.log("Form data:", formData);
+
+    try {
+      // Upload files to storage if they exist
+      let servicesListUrl = null;
+      let guidelinesUrl = null;
+
+      if (formData.bookingFlow?.servicesList) {
+        const file = formData.bookingFlow.servicesList;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-services.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('onboarding-documents')
+          .upload(fileName, file);
+        
+        if (!uploadError) {
+          servicesListUrl = fileName;
+        }
+      }
+
+      if (formData.bookingFlow?.guidelines) {
+        const file = formData.bookingFlow.guidelines;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-guidelines.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('onboarding-documents')
+          .upload(fileName, file);
+        
+        if (!uploadError) {
+          guidelinesUrl = fileName;
+        }
+      }
+
+      // Prepare data for submission
+      const submissionData = {
+        structure_name: formData.centerInfo?.structureName || '',
+        address: formData.centerInfo?.address || '',
+        contact_name: formData.centerInfo?.contactName || '',
+        contact_email: formData.centerInfo?.contactEmail || '',
+        contact_phone: formData.centerInfo?.contactPhone || '',
+        main_phone: formData.centerInfo?.mainPhone || '',
+        
+        patient_info: formData.bookingFlow?.patientInfo || [],
+        communications: formData.bookingFlow?.communications || [],
+        greeting_type: formData.bookingFlow?.greetingType || '',
+        custom_greeting: formData.bookingFlow?.customGreeting || null,
+        other_instructions: formData.bookingFlow?.otherInstructions || null,
+        additional_options: formData.bookingFlow?.additionalOptions || [],
+        services_list_file: servicesListUrl,
+        guidelines_file: guidelinesUrl,
+        dont_handle: formData.bookingFlow?.dontHandle || '',
+        
+        call_forwarding_settings: formData.callForwarding || {},
+        
+        pbx_type: formData.phoneIntegration?.pbxType || '',
+        main_call_number: formData.phoneIntegration?.mainCallNumber || '',
+        forwarding_number: formData.phoneIntegration?.forwardingNumber || '',
+        tech_contact_name: formData.phoneIntegration?.techContactName || '',
+        tech_contact_email: formData.phoneIntegration?.techContactEmail || '',
+        tech_contact_phone: formData.phoneIntegration?.techContactPhone || '',
+        external_provider: formData.phoneIntegration?.externalProvider || null,
+        
+        notification_types: formData.notifications?.notificationTypes || [],
+        notification_emails: formData.notifications?.notificationEmails || '',
+        patient_notification: formData.notifications?.patientNotification || '',
+        whatsapp_message: formData.notifications?.whatsappMessage || null,
+      };
+
+      const { error } = await supabase
+        .from('onboarding_submissions')
+        .insert(submissionData);
+
+      if (error) throw error;
+
+      toast.success("Configurazione inviata con successo!", {
+        description: "Il team CiaoDott procederà con l'attivazione del servizio.",
+        icon: <CheckCircle2 className="h-5 w-5 text-success" />,
+      });
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error("Errore durante l'invio", {
+        description: "Si prega di riprovare o contattare il supporto.",
+        icon: <AlertCircle className="h-4 w-4" />,
+      });
+    }
   };
 
   const updateFormData = (section: string, data: any) => {
